@@ -130,43 +130,49 @@ const router = createRouter({
 	},
 });
 
-const token = Cookie.get("token");
-console.log(token, " apa ini");
+async function refreshTokenIfNeeded() {
+	const authStore = useAuthStore();
+	const token = Cookie.get("token");
+	const refreshToken = Cookie.get("refreshToken");
 
+	if (!token && refreshToken) {
+		console.log("Access token is missing, attempting to refresh...");
+		const success = await authStore.refreshSignin();
+		if (success) {
+			console.log("Token refreshed successfully.");
+			return true;
+		}
+		console.log("Failed to refresh token.");
+		authStore.removeCredentials();
+	}
+	return false;
+}
+
+// Navigation guard
 router.beforeEach(async (to, from, next) => {
 	const authStore = useAuthStore();
 	const isAuthenticated = authStore.credentials?.accessToken;
 
-	const token = Cookie.get("token");
-	const refreshToken = Cookie.get("refreshToken");
-
-	// Check if the token is missing
-	if (!token && refreshToken) {
-		console.log("Access token is missing, attempting to refresh...");
-
-		// Attempt to refresh the token
-		const success = await authStore.refreshSignin();
-		if (success) {
-			console.log("Token refreshed successfully.");
-			next(); // Proceed to the intended route
-			return;
-		} else {
-			console.log("Failed to refresh token. Redirecting to signin...");
-			authStore.removeCredentials();
-			next({ name: "signin" }); // Redirect to sign-in
-			return;
-		}
+	if (await refreshTokenIfNeeded()) {
+		next();
+		return;
 	}
 
-	console.log(isAuthenticated, " auth gak");
+	// Handle routes requiring authentication
+	if (to.meta.requiresAuth && !isAuthenticated) {
+		next({ name: "signin" });
+		return;
+	}
+
+	// Redirect authenticated users away from sign-in
 	if (to.path === "/auth/signin" && isAuthenticated) {
 		next({ path: "/" });
-	} else if (to.meta.requiresAuth && !isAuthenticated) {
-		next({ name: "signin" });
-	} else {
-		document.title = `Vue.js ${to.meta.title} | TailAdmin - Vue.js Tailwind CSS Dashboard Template`;
-		next();
+		return;
 	}
+
+	// Set page title and proceed
+	document.title = `Vue.js ${to.meta.title} | TailAdmin - Vue.js Tailwind CSS Dashboard Template`;
+	next();
 });
 
 export default router;

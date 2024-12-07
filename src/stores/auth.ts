@@ -1,63 +1,5 @@
-// import { defineStore } from 'pinia'
-// import axios from 'axios'
-
-// export const useCustomerLoginStore = defineStore('customerLoginStore', {
-//     state: () => ({
-//         currentUser: null as { token: string } | null
-//     }),
-//     actions: {
-//         async store(data: any) {
-//             try {
-//                 const response = await axios.post(this.pageInfo.STORE_LOGIN, data)
-//                 const token = response.data.access_token
-//                 const user = response.data.user
-//                 if (token) {
-//                     this.currentUser = { token }
-//                 }
-//                 return token
-//             } catch (error: any) {
-//                 throw error.response?.data
-//             }
-//         },
-//         async getUserInfo(token: string) {
-//             const header = { headers: { Authorization: 'Bearer ' + token } }
-//             try {
-//                 const response = await axios.get(this.pageInfo.LOAD_USER_INFO, null, header)
-//                 if (this.currentUser) {
-//                     this.currentUser = { ...this.currentUser, ...response.data }
-//                 }
-//                 return true
-//             } catch (error: any) {
-//                 throw error.response?.data
-//             }
-//         },
-//         async logout() {
-//             if (!this.currentUser) {
-//                 return true
-//             }
-//             try {
-//                 await axios.post(this.pageInfo.LOGOUT)
-//                 this.currentUser = null
-//                 return true
-//             } catch (error: any) {
-//                 throw error.response?.data
-//             }
-//         }
-//     },
-//     getters: {
-//         getToken: (state) => state.currentUser?.token,
-//         isLoggedIn: (state) => !!state.currentUser,
-//         pageInfo: () => ({
-//             STORE_LOGIN: 'http://192.168.60.41/api/gate/auth/signin',
-//             LOAD_USER_INFO: 'http://192.168.60.41/api/gate/user/',
-//             LOGOUT: 'http://192.168.60.41/api/api/logout'
-//         })
-//     }
-// })
-
 import { http } from "@/app/http";
 import { defineStore } from "pinia";
-import axios from "axios";
 import Cookies from "js-cookie";
 import type { AuthResponse, Branch, StringOpt } from "@/app/type";
 import { decodeJWT } from "@/app/helper";
@@ -165,16 +107,9 @@ export const useAuthStore = defineStore("auth", {
 				return false;
 			}
 		},
-		// loadStoredCredentials() {
-		// 	const storedCredentials = Cookies.get("token");
-		// 	if (storedCredentials) {
-		// 		this.credentials = JSON.parse(storedCredentials);
-		// 	}
-		// },
 		loadStoredCredentials() {
 			const token = Cookies.get("token");
 			const refreshToken = Cookies.get("refreshToken");
-			console.log(token, refreshToken, "solong");
 
 			if (token) {
 				// If token exists, load it into the credentials
@@ -182,7 +117,6 @@ export const useAuthStore = defineStore("auth", {
 				console.log("token masih ada");
 			} else if (refreshToken) {
 				console.log("token tidak ada, refrsh toekn");
-				// If only refreshToken exists, try refreshing the token
 				this.refreshSignin;
 			}
 		},
@@ -193,7 +127,6 @@ export const useAuthStore = defineStore("auth", {
 			} as AuthResponse;
 		},
 		reset() {
-			// Reset the entire state to its initial values
 			Object.assign(this, this.$reset());
 		},
 	},
