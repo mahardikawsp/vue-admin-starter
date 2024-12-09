@@ -8,6 +8,7 @@ type AuthState = {
 	isPostingSignin: boolean;
 	credentials?: AuthResponse;
 	isSwitchingBranch: boolean;
+	// setCredentials: boolean;
 	currentBranch?: StringOpt;
 	branches?: StringOpt[];
 	branch?: Branch;
@@ -20,6 +21,10 @@ const initialState: AuthState = {
 	isSwitchingBranch: false,
 	isRefreshingToken: false,
 	isSigningOut: false,
+	credentials: undefined,
+	currentBranch: undefined,
+	branches: undefined,
+	branch: undefined,
 };
 
 export const useAuthStore = defineStore("auth", {
@@ -27,14 +32,14 @@ export const useAuthStore = defineStore("auth", {
 		...initialState,
 	}),
 	getters: {
-		setCredentials(): boolean {
+		setCredentials: (state) => {
 			const data = Cookies.get("token");
 			if (data) {
-				this.credentials = JSON.parse(data);
+				state.credentials = JSON.parse(data);
 			} else {
-				this.credentials = undefined; // Clear credentials if no token
+				state.credentials = undefined;
 			}
-			return !!this.credentials;
+			return !!state.credentials;
 		},
 	},
 	actions: {
@@ -112,12 +117,11 @@ export const useAuthStore = defineStore("auth", {
 			const refreshToken = Cookies.get("refreshToken");
 
 			if (token) {
-				// If token exists, load it into the credentials
 				this.credentials = JSON.parse(token);
 				console.log("token masih ada");
-			} else if (refreshToken) {
+			} else if (!token && refreshToken) {
 				console.log("token tidak ada, refrsh toekn");
-				this.refreshSignin;
+				// this.refreshSignin();
 			}
 		},
 		removeCredentials() {

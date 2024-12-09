@@ -151,7 +151,7 @@ async function refreshTokenIfNeeded() {
 // Navigation guard
 router.beforeEach(async (to, from, next) => {
 	const authStore = useAuthStore();
-	const isAuthenticated = authStore.credentials?.accessToken;
+	const isAuthenticated = authStore.setCredentials;
 
 	if (await refreshTokenIfNeeded()) {
 		next();
