@@ -15,6 +15,7 @@ import ButtonsView from "@/views/UiElements/ButtonsView.vue";
 import { useAuthStore } from "@/stores/auth";
 import { ref, watch } from "vue";
 import Cookie from "js-cookie";
+import List from "@/views/Gate/Employee/List.vue";
 
 const routes = [
 	{
@@ -56,7 +57,7 @@ const routes = [
 	{
 		path: "/gate/employee",
 		name: "gateEmployee",
-		component: FormLayoutView,
+		component: List,
 		meta: {
 			requiresAuth: true,
 			title: "Karyawan",

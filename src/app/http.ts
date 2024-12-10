@@ -15,7 +15,7 @@ export const http = axios.create({
 
 // Axios instance for file-related requests
 export const httpFile = axios.create({
-	baseURL: import.meta.env.VITE_BE_SERVER,
+	baseURL: "http://192.168.60.41/api/",
 	timeout: 3000,
 	headers: { "Content-Type": "multipart/form-data" },
 });
