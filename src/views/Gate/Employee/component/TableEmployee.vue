@@ -1,108 +1,124 @@
-<!-- eslint-disable vue/multi-word-component-names -->
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
-import BreadcrumbDefault from "@/components/Breadcrumbs/BreadcrumbDefault.vue";
-import SettingsCard from "@/components/SettingsCard.vue";
-import DefaultLayout from "@/layouts/DefaultLayout.vue";
-import TableEmployee from "./component/TableEmployee.vue";
-const pageTitle = ref("Settings Page");
-
-import { useEmployeeStore } from "@/stores/gate/employee/store";
-import { useImageStore } from "@/stores/images";
+import { ref, watch, onMounted, type PropType } from 'vue';
+import { useHttpFile } from '@/app/http';
+import { useEmployeeStore } from '@/stores/gate/employee/store';
+import { useRouter } from 'vue-router';
 const employeeStore = useEmployeeStore();
-const imageStore = useImageStore();
-const employees = ref([]); 
+const router = useRouter();
 
-onMounted(async () => {
-	await employeeStore.setEmployee(`branchCode:SB2`);
-  employees.value = employeeStore.loadEmployees; 
-	// for (const employee of employeeStore.loadEmployee) {
-	// 	if (employee.photo) {
-	// 		try {
-	// 			const imageUrl = await imageStore.setImage(
-	// 				"file/gate/user",
-	// 				employee.photo,
-	// 			);
+type Employee = {
+  id: string;
+  branchCode: string;
+  name: string;
+  position: { value: string, label: string };
+  photo?: string | null;
+  imageUrl?: string | null;
+};
 
-	// 			console.log("image", imageUrl);
-	// 			employee.imageUrl = imageUrl;
-	// 		} catch (error) {
-	// 			console.error(
-	// 				`Failed to fetch image for employee ${employee.name}:`,
-	// 				error,
-	// 			);
-	// 			employee.imageUrl = "";
-	// 		}
-	// 	}
-	// }
+const props = defineProps({
+  employees: {
+    type: Array as PropType<Employee[]>,
+    required: true
+  }
 });
+
+const editEmployee = (id: string) => {
+  router.push(`/gate/employee/${id}`); // Redirect to the edit page with the employee ID
+};
+
+// const employeeStore = {
+//   loadEmployee: ref<Employee[]>([
+//     // Example data, replace with real data fetching logic
+//     {
+//       id: '1',
+//       branchCode: '001',
+//       fullname: 'John Doe',
+//       position: 'Manager',
+//       photoFilename: 'john_doe.png',
+//     },
+//     {
+//       id: '2',
+//       branchCode: '002',
+//       fullname: 'Jane Smith',
+//       position: 'Assistant',
+//       photoFilename: 'jane_smith.png',
+//     },
+//   ]),
+// };
+
+const fetchPhotoUrl = async (filename: string) => {
+  try {
+    const { data } = await useHttpFile(`file/gate/user/${filename}`);
+    if (data instanceof Blob) {
+      return URL.createObjectURL(data);
+    } else {
+      console.error('Response is not a Blob');
+      return null;
+    }
+  } catch (error) {
+    console.error('Error fetching photo:', error);
+    return null;
+  }
+};
+
+const initializeEmployeeImages = async () => {
+  for (const employee of props.employees) {
+    if (employee.photo) {
+      employee.imageUrl = await fetchPhotoUrl(employee.photo);
+    }
+  }
+};
+
+onMounted(() => {
+  initializeEmployeeImages();
+});
+
+watch(() => props.employees, initializeEmployeeImages);
 </script>
 
 <template>
-  <DefaultLayout>
-    <div class="mx-auto max-w-270">
-      <!-- Breadcrumb Start -->
-      <BreadcrumbDefault :pageTitle="pageTitle" />
-      <!-- Breadcrumb End -->
-      <div class="rounded-sm border border-stroke bg-white shadow-default dark:border-strokedark dark:bg-boxdark" >
-        <div class="py-6 px-4 md:px-6 xl:px-7.5">
-        <h4 class="text-xl font-bold text-black dark:text-white">Top Products</h4>
+  <div>
+    <div
+      v-for="employee in employees"
+      :key="employee.id"
+      class="grid grid-cols-6 border-t border-stroke py-4.5 px-4 dark:border-strokedark sm:grid-cols-8 md:px-6 2xl:px-7.5"
+    >
+      <!-- Employee Details -->
+      <div class="col-span-3 flex items-center">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
+          <div class="h-12.5 w-15 rounded-md overflow-hidden">
+            <img
+              v-if="employee.imageUrl"
+              :src="employee.imageUrl"
+              alt="Employee Photo"
+              class="object-cover h-full w-full"
+            />
+            <div v-else class="h-full w-full bg-gray-200 flex items-center justify-center">
+              <span class="text-sm text-gray-500">No Image</span>
+            </div>
+          </div>
+          <p class="text-sm font-medium text-black dark:text-white">
+            {{ employee.name }}
+          </p>
         </div>
+      </div>
 
-        <!-- Table Header -->
-        <div class="grid grid-cols-6 border-t border-stroke py-4.5 px-4 dark:border-strokedark sm:grid-cols-8 md:px-6 2xl:px-7.5">
-            <div class="col-span-3 flex items-center">
-                <p class="font-medium">Employee Name</p>
-            </div>
-            <div class="col-span-2 hidden items-center sm:flex">
-                <p class="font-medium">Position</p>
-            </div>
-            <div class="col-span-1 flex items-center">
-                <p class="font-medium">BranchCode</p>
-            </div>
-            <div class="col-span-2 flex items-center">
-                <p class="font-medium">Action</p>
-            </div>
-            <!-- <div class="col-span-1 flex items-center">
-                <p class="font-medium">Profit</p>
-            </div> -->
-        </div>
+      <!-- Branch Code -->
+      <div class="col-span-2 hidden items-center sm:flex">
+        <p class="text-sm font-medium text-black dark:text-white">{{ employee.position.label }}</p>
+      </div>
 
-        <!-- Table Rows -->
-        <TableEmployee :employees="employees" />
-        <!-- <div
-        v-for="employee in employeeStore.loadEmployee"
-        :key="employee.id"
-        class="grid grid-cols-6 border-t border-stroke py-4.5 px-4 dark:border-strokedark sm:grid-cols-8 md:px-6 2xl:px-7.5"
-        >
-            <div class="col-span-3 flex items-center">
-                <div class="flex flex-col gap-4 sm:flex-row sm:items-center">
-                <div class="h-12.5 w-15 rounded-md">
-                    <img :href="employee.photo" :src="employee.imageUrl"/>
-                </div>
-                <p class="text-sm font-medium text-black dark:text-white">{{ employee.name }}</p>
-                </div>
-            </div>
-            <div class="col-span-2 hidden items-center sm:flex">
-                <p class="text-sm font-medium text-black dark:text-white">{{ employee.name }}</p>
-            </div>
-            <div class="col-span-1 flex items-center">
-                <p class="text-sm font-medium text-black dark:text-white">${{ employee.name }}</p>
-            </div>
-            <div class="col-span-1 flex items-center">
-                <p class="text-sm font-medium text-black dark:text-white">{{ employee.name }}</p>
-            </div>
-            <div class="col-span-1 flex items-center">
-                <div class="flex items-center space-x-3.5">
-                <button class="hover:text-primary">
-                  <svg
-                    class="fill-current"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 18 18"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
+      <!-- Position -->
+      <div class="col-span-1 flex items-center">
+        <p class="text-sm font-medium text-black dark:text-white">{{ employee.branchCode }}</p>
+      </div>
+
+      <!-- Actions -->
+      <div class="col-span-2 flex items-center">
+        <div class="flex items-center space-x-3.5">
+          <button class="hover:text-primary" @click="editEmployee(employee.id)">
+            <!-- Edit Icon -->
+            <svg class="fill-current" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg" >
                     <path
                       d="M8.99981 14.8219C3.43106 14.8219 0.674805 9.50624 0.562305 9.28124C0.47793 9.11249 0.47793 8.88749 0.562305 8.71874C0.674805 8.49374 3.43106 3.20624 8.99981 3.20624C14.5686 3.20624 17.3248 8.49374 17.4373 8.71874C17.5217 8.88749 17.5217 9.11249 17.4373 9.28124C17.3248 9.50624 14.5686 14.8219 8.99981 14.8219ZM1.85605 8.99999C2.4748 10.0406 4.89356 13.5562 8.99981 13.5562C13.1061 13.5562 15.5248 10.0406 16.1436 8.99999C15.5248 7.95936 13.1061 4.44374 8.99981 4.44374C4.89356 4.44374 2.4748 7.95936 1.85605 8.99999Z"
                       fill=""
@@ -112,10 +128,10 @@ onMounted(async () => {
                       fill=""
                     />
                   </svg>
-                </button>
-
-                <button class="hover:text-primary">
-                  <svg
+          </button>
+          <button class="hover:text-primary" @click="() => console.log('Delete', employee.name)">
+            <!-- Delete Icon -->
+            <svg
                     class="fill-current"
                     width="18"
                     height="18"
@@ -140,17 +156,9 @@ onMounted(async () => {
                       fill=""
                     />
                   </svg>
-                </button>
-
-                <button class="hover:text-primary">
-                  <svg
-                    class="fill-current"
-                    width="18"
-                    height="18"
-                    viewBox="0 0 18 18"
-                    fill="none"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
+          </button>
+          <button class="hover:text-primary">
+            <svg class="fill-current" width="18" height="18" viewBox="0 0 18 18" fill="none" xmlns="http://www.w3.org/2000/svg">
                     <path
                       d="M16.8754 11.6719C16.5379 11.6719 16.2285 11.9531 16.2285 12.3187V14.8219C16.2285 15.075 16.0316 15.2719 15.7785 15.2719H2.22227C1.96914 15.2719 1.77227 15.075 1.77227 14.8219V12.3187C1.77227 11.9812 1.49102 11.6719 1.12539 11.6719C0.759766 11.6719 0.478516 11.9531 0.478516 12.3187V14.8219C0.478516 15.7781 1.23789 16.5375 2.19414 16.5375H15.7785C16.7348 16.5375 17.4941 15.7781 17.4941 14.8219V12.3187C17.5223 11.9531 17.2129 11.6719 16.8754 11.6719Z"
                       fill=""
@@ -160,11 +168,10 @@ onMounted(async () => {
                       fill=""
                     />
                   </svg>
-                </button>
-              </div>
-            </div>
-        </div> -->
+          </button>
+        </div>
       </div>
+      
     </div>
-  </DefaultLayout>
+  </div>
 </template>
